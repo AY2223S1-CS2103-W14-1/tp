@@ -13,6 +13,7 @@ import seedu.condonery.logic.commands.HelpCommand;
 import seedu.condonery.logic.commands.client.AddClientCommand;
 import seedu.condonery.logic.commands.client.FilterClientCommand;
 import seedu.condonery.logic.commands.client.FindClientCommand;
+import seedu.condonery.logic.commands.client.EditClientCommand;
 import seedu.condonery.logic.commands.client.ListClientCommand;
 import seedu.condonery.logic.commands.property.AddPropertyCommand;
 import seedu.condonery.logic.commands.property.DeletePropertyCommand;
@@ -23,6 +24,7 @@ import seedu.condonery.logic.commands.property.ListPropertyCommand;
 import seedu.condonery.logic.parser.client.AddClientCommandParser;
 import seedu.condonery.logic.parser.client.FilterClientCommandParser;
 import seedu.condonery.logic.parser.client.FindClientCommandParser;
+import seedu.condonery.logic.parser.client.EditClientCommandParser;
 import seedu.condonery.logic.parser.exceptions.ParseException;
 import seedu.condonery.logic.parser.property.AddPropertyCommandParser;
 import seedu.condonery.logic.parser.property.DeletePropertyCommandParser;
@@ -67,6 +69,9 @@ public class CondoneryParser {
 
         case EditPropertyCommand.COMMAND_WORD:
             return new EditPropertyCommandParser().parse(arguments);
+
+        case EditClientCommand.COMMAND_WORD:
+            return new EditClientCommandParser().parse(arguments);
 
         case DeletePropertyCommand.COMMAND_WORD:
             return new DeletePropertyCommandParser().parse(arguments);
