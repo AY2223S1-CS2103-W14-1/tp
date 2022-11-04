@@ -9,41 +9,41 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### John Doe
+### Zacchaeus Chok
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/zacchaeuschok.png" width="200px">
 
-[[homepage](http://www.comp.nus.edu.sg/~damithch)]
-[[github](https://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](https://github.com/zacchaeuschok)]
+[[portfolio](team/zacchaeuschok.md)]
 
-* Role: Project Advisor
+* Role: Code Zebra
+* Responsibilities: Generate code + testing + documentation
 
-### Jane Doe
+### Sng Haoren
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/misterpuffin.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](http://github.com/misterpuffin)]
+[[portfolio](team/misterpuffin.md)]
 
-* Role: Team Lead
-* Responsibilities: UI
+* Role: Code Monkey
+* Responsibilities: Generate code
 
-### Johnny Doe
+### Zhao Yige
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/frrramses.png" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](http://github.com/frrramses)] [[portfolio](team/frrramses.md)]
 
-* Role: Developer
-* Responsibilities: Data
+* Role: Code Crocodile
+* Responsibilities: Random Ideas & Random Codes
 
-### Jean Doe
+### Kang Yue Hern
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/yuehernkang.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](http://github.com/yuehernkang)]
+[[portfolio](team/yuehernkang.md)]
 
 * Role: Developer
 * Responsibilities: Dev Ops + Threading

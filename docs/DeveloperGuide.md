@@ -3,7 +3,7 @@ layout: page
 title: Developer Guide
 ---
 * Table of Contents
-{:toc}
+  {:toc}
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -154,11 +154,135 @@ Classes used by multiple components are in the `seedu.addressbook.commons` packa
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Select property/client feature
+
+The select feature is meant to expand on either a `Property` or a `Client` to display its details in the GUI. Importantly, a `Property` can hold a list of interested clients and a `Client` can hold a list of properties that the client is interested in. Depending on if a `Property` or `Client` is selected, the GUI changes to show just the selected `Property`/`Client` in its respective tab, and its interested clients/intersted properties in the other tab. The select command is as follows:
+```
+select -[pc] [INDEX]
+```
+The compulsory input `INDEX` would correspond to the current displayed list in the GUi.
+Examples of usage:
+* `select -p 2`
+* `select -c 10`
+
+
+### Range feature [Zacchaeus]
+
+The range feature allows the user to filter properties by a price range in Condonery.
+
+The feature is activated by the command pattern `range -p l/[lower] u/[upper]`.
+
+**Parsing of command within the `Logic` component**
+
+Much like the other core features, we introduced an intermediate between `CondoneryParser` and the range command parser,
+that is the `RangePropertyCommandParser`.
+
+These are the steps that will be taken when parsing a range command:
+
+1. The `CondoneryParser` checks if the user command is a range command. Then it creates a `RangePropertyCommandParser`.
+2. The `RangePropertyCommandParser` which implements the `Parser` interface, parses the command via `Parser#parse`.
+3. If the user command is valid, the parser creates the corresponding `Command` object for execution.
+
+Given below is a sequence diagram for interactions inside the Logic component for the `execute(range -p l/<LOWER> u/<UPPER>`
+API call.
+- Note that the command is truncated for brevity and <LOWER> and <UPPER> are used as placeholders to encapsulate the remaining arguments supplied by the user.
+- For example, if the full command was `range -p l/100,000 u/500,000`, then `l/<LOWER> u/<UPPER>` is equivalent to `l/100,000 u/500,000`.
+
+![RangeSequenceDiagram](images/RangeSequenceDiagram.png)
+
+**Execution of command within the `Logic` component**
+
+When a `RangePropertyCommand` is created by the `RangePropertyCommandParser`, it is executed with `model` passed in
+as the parameter.
+
+Firstly, the `updateFilteredPropertyList` is called to get the list of properties within the specified price range.
+
+Next, a `CommandResult` object containing the message to be displayed to the user is returned to `LogicManager`.
+
+![RangeExecuteSequenceDiagram](images/RangeExecuteSequenceDiagram.png)
+
+**Error handling within the `Logic` component**
+
+The below activity diagram shows the overall process of execution of `execute(range -p l/100 u/200`.
+
+In order to ensure data cleanliness and that the inputs by the users are valid, errors are thrown at various stages if:
+
+- Incorrect command format is used (e.g. missing price as argument, missing prefixes)
+- Arguments are invalid (e.g. negative prices)
+
+![RangeActivityDiagram](images/RangeActivityDiagram.png)
+
+**Design consideration**
+
+Aspect: How to filter properties by prices
+
+- **Alternative 1** (current choice): Add a lower and upper prefix to command phrase to indicate lower and upper bound.
+    - Pros:
+      - Less time-consuming to implement.
+      - Easier to parse price range.
+    - Cons:
+      - Imposes strict requirement on use of lower and upper prefixes.
+- **Alternative 2**: Allow user to key in two separate integers in command.
+  - Pros:
+    - Easy and fairly intuitive user input system
+  - Cons:
+    - More time-consuming to implement.
+    - Need extra checking to correctly parse two separate integers and identify lower and upper bounds.
+    - More prone to manual user entry error.
+
+Alternative 1 was chosen to enable more efficient parsing of commands.
+
+`PropertyPriceWithinRangePredicate`
+
+### Commands
+
+#### \[Proposed\] Search Command
+
+#### Proposed Implementation
+
+The proposed search command allows the user to search for a particular `Property`. It is facilitated by `SearchCommand`.
+It extends the `Command` class.
+
+Users can specify if they want to perform the search for a `Property` or `Client` with the following
+options
+
+1. `-p` Search for a particular property with matching keywords
+2. `-c` Search for a particular client with matching keywords
+
+#### Parsing of commands within the `Logic` component
+
+The parsing of commands begins once the `LogicManager` receives and tries to execute the user input.
+
+To parse the different commands in our application, we have individual command parsers for the different commands
+(e.g. `EditCommandParser`).
+
+The steps taken when parsing a search command are as follows:
+
+1. The `SearchCommandParser` will check what type (`Property` or `Client`) the search is for
+and create the corresponding parser
+   1. `search -p` will create the command: `SearchPropertyCommand`
+   2. `search -c` will create the command: `SearchClientCommand`
+3. The respective parsers all implement the `Parser` interface, and the `Parser#parse` method will then be called.
+
+#### Design Considerations:
+
+- Create a `SearchCommand` class
+
+### User Uploaded Images
+The application allows users to upload their own images for Property and Client models. By default, the images are stored
+in `data/images`, but users can specify their custom directory in `preferences.json`.
+
+The Image object is not initialized until the PropertyCard/ClientCard of the UI is rendered. This is to save memory
+consumption and rely on the Lazy Loading of Observable List. We need to inject the UserPrefs into the Property/Client
+models in order to determine the location to source for the uploaded images.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
+The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`.
+It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`.
+Additionally, it implements the following operations:
 
 * `VersionedAddressBook#commit()` — Saves the current address book state in its history.
 * `VersionedAddressBook#undo()` — Restores the previous address book state from its history.
@@ -223,14 +347,18 @@ The following activity diagram summarizes what happens when a user executes a ne
 
 **Aspect: How undo & redo executes:**
 
-* **Alternative 1 (current choice):** Saves the entire address book.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
+* **Alternative 1:** Saves the initial PropertyDirectory and ClientDirectory on initialization. Store all commands in
+CommandQueue and re-executes _n - 1_ commands on undo.
+    * Pros: Easy to implement. Less memory usage
+    * Cons: Might make undo command less responsive, depending on complexity of commands.
+* **Alternative 2:** Saves the entire address book.
+    * Pros: Easy to implement.
+    * Cons: May have performance issues in terms of memory usage.
 
-* **Alternative 2:** Individual command knows how to undo/redo by
+* **Alternative 3:** Individual command knows how to undo/redo by
   itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command are correct.
+    * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
+    * Cons: We must ensure that the implementation of each individual command are correct.
 
 _{more aspects and alternatives to be added}_
 
@@ -255,44 +383,45 @@ _{Explain here how the data archiving feature will be implemented}_
 
 ### Product scope
 
-**Target user profile**:
+***Target user profile**:
 
-* has a need to manage a significant number of contacts
+* middle-aged property agent selling new condos to prospective clients
+* has a need to manage a significant number of property listings and clients
 * prefer desktop apps over other types
 * can type fast
 * prefers typing to mouse interactions
 * is reasonably comfortable using CLI apps
 
-**Value proposition**: manage contacts faster than a typical mouse/GUI driven app
+**Value proposition**: manage property listings and clients faster than a typical mouse/GUI driven app
 
 
 ### User stories
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
 
-| Priority | As a …​                                    | I want to …​                     | So that I can…​                                                        |
-| -------- | ------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------- |
-| `* * *`  | new user                                   | see usage instructions         | refer to instructions when I forget how to use the App                 |
-| `* * *`  | user                                       | add a new person               |                                                                        |
-| `* * *`  | user                                       | delete a person                | remove entries that I no longer need                                   |
-| `* * *`  | user                                       | find a person by name          | locate details of persons without having to go through the entire list |
-| `* *`    | user                                       | hide private contact details   | minimize chance of someone else seeing them by accident                |
-| `*`      | user with many persons in the address book | sort persons by name           | locate a person easily                                                 |
+| Priority | As a …​                                            | I want to …​               | So that I can…​                                                              |
+| -------- |----------------------------------------------------|----------------------------|------------------------------------------------------------------------------|
+| `* * *`  | new user                                           | see usage instructions     | refer to instructions when I forget how to use the App                       |
+| `* * *`  | property agent                                     | add a new property listing |                                                                              |
+| `* * *`  | property agent                                     | delete a property listing  | remove entries that I no longer need                                         |
+| `* * *`  | property agent                                     | find a listing by name     | locate details of listings without having to go through the entire list      |
+| `* *`    | property agent                                     | edit listing details       | update details of listings                                                   |
+| `*`      | property agent with many listings in the directory | sort listings by price cap | locate a listing within budget without haveing to go through the entire list |
 
 *{More to be added}*
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is the `Condonery` and the **Actor** is the `use
 
-**Use case: Delete a person**
+**Use case: Delete a listing**
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
+1.  User requests to list property
+2.  Condonery shows a list of properties
+3.  User requests to delete a specific property in the list
+4.  Condonery deletes the person
 
     Use case ends.
 
@@ -304,7 +433,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 3a. The given index is invalid.
 
-    * 3a1. AddressBook shows an error message.
+    * 3a1. Condonery shows an error message.
 
       Use case resumes at step 2.
 
@@ -312,15 +441,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 ### Non-Functional Requirements
 
-1.  Should work on any _mainstream OS_ as long as it has Java `11` or above installed.
-2.  Should be able to hold up to 1000 persons without a noticeable sluggishness in performance for typical usage.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+1. Should work on any _mainstream OS_ as long as it has Java `11` or above installed.
+2. Should be able to hold up to 1000 persons without a noticeable sluggishness in performance for typical usage.
+3. A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+4. Should work on 32-bit and 64-bit environments.
+5. Should work without an internet connection
 
 *{More to be added}*
 
 ### Glossary
 
 * **Mainstream OS**: Windows, Linux, Unix, OS-X
+* **Contact**: A client of the app user
 * **Private contact detail**: A contact detail that is not meant to be shared with others
 
 --------------------------------------------------------------------------------------------------------------------
@@ -338,15 +470,15 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1. Download the jar file and copy into an empty folder
+    1. Download the jar file and copy into an empty folder
 
-   1. Double-click the jar file Expected: Shows the GUI with a set of sample contacts. The window size may not be optimum.
+    1. Double-click the jar file Expected: Shows the GUI with a set of sample contacts. The window size may not be optimum.
 
 1. Saving window preferences
 
-   1. Resize the window to an optimum size. Move the window to a different location. Close the window.
+    1. Resize the window to an optimum size. Move the window to a different location. Close the window.
 
-   1. Re-launch the app by double-clicking the jar file.<br>
+    1. Re-launch the app by double-clicking the jar file.<br>
        Expected: The most recent window size and location is retained.
 
 1. _{ more test cases …​ }_
@@ -355,16 +487,16 @@ testers are expected to do more *exploratory* testing.
 
 1. Deleting a person while all persons are being shown
 
-   1. Prerequisites: List all persons using the `list` command. Multiple persons in the list.
+    1. Prerequisites: List all persons using the `list` command. Multiple persons in the list.
 
-   1. Test case: `delete 1`<br>
-      Expected: First contact is deleted from the list. Details of the deleted contact shown in the status message. Timestamp in the status bar is updated.
+    1. Test case: `delete 1`<br>
+       Expected: First contact is deleted from the list. Details of the deleted contact shown in the status message. Timestamp in the status bar is updated.
 
-   1. Test case: `delete 0`<br>
-      Expected: No person is deleted. Error details shown in the status message. Status bar remains the same.
+    1. Test case: `delete 0`<br>
+       Expected: No person is deleted. Error details shown in the status message. Status bar remains the same.
 
-   1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
+    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
+       Expected: Similar to previous.
 
 1. _{ more test cases …​ }_
 
@@ -372,6 +504,6 @@ testers are expected to do more *exploratory* testing.
 
 1. Dealing with missing/corrupted data files
 
-   1. _{explain how to simulate a missing/corrupted file, and the expected behavior}_
+    1. _{explain how to simulate a missing/corrupted file, and the expected behavior}_
 
-1. _{ more test cases …​ }_
+2. _{ more test cases …​ }_
